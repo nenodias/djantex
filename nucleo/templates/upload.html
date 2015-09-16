@@ -1,0 +1,12 @@
+<html>
+  <head>
+    <title>Djantex</title>
+  </head>
+  <body>
+    <form action="/nucleo/uploads" method="post">
+      {% csrf_token %}
+      {{ form }}
+      <button type="submit">Upload</button>
+    </form>
+  </body>
+</html>
