@@ -45,7 +45,7 @@ def upload_arquivo(arquivo):
             destination.write(chunk)
 
 ## Fazendo o processamento do latex
-import subprocess, sys
+import subprocess, sys, tempfile
 
 PADRAO_SUCESSO = b'Output written on'
 ARQUIVO_VAZIO = b"*(Please type a command or say `\\end')"
@@ -53,7 +53,8 @@ ENTER_KEY = b'\n\r'
 
 def processando_latex(path_arquivo):
     atual = os.getcwd()
-    #os.chdir('uploads')
+    os.chdir('uploads')
+    #os.chdir( tempfile.gettempdir() )#Entrar no diretorio temporario
     chamada = "pdflatex"
     #Verificando o SO
     if sys.platform.startswith('win'):
