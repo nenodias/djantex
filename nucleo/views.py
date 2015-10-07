@@ -21,6 +21,8 @@ class MinhaView(View):
     def post(self, request, *args, **kwargs):
         return HttpResponse('Olá post')
 
+import tempfile
+
 class UploadView(View):
 
     def get(self, request, *args, **kwargs):
@@ -31,6 +33,7 @@ class UploadView(View):
         form = forms.UploadFileForm(request.POST, request.FILES)
         if form.is_valid():
             try:
+                pasta_temporaria = tempfile.tempdir()
                 upload_arquivo( form.cleaned_data['arquivo'], pasta_temporaria )
                 nome_arquivo = form.cleaned_data['arquivo'].name
                 processando_latex( form.cleaned_data['arquivo'].name, pasta_temporaria )
