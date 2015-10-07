@@ -22,6 +22,7 @@ class MinhaView(View):
         return HttpResponse('Olá post')
 
 import tempfile
+import pdb
 
 class UploadView(View):
 
@@ -33,12 +34,20 @@ class UploadView(View):
         form = forms.UploadFileForm(request.POST, request.FILES)
         if form.is_valid():
             try:
-                pasta_temporaria = tempfile.tempdir()
+                pdb.set_trace()
+                pasta_temporaria = tempfile.mkdtemp()
                 upload_arquivo( form.cleaned_data['arquivo'], pasta_temporaria )
                 nome_arquivo = form.cleaned_data['arquivo'].name
-                processando_latex( form.cleaned_data['arquivo'].name, pasta_temporaria )
+                processando_latex( nome_arquivo, pasta_temporaria )
                 arquivo_pdf = nome_arquivo[:nome_arquivo.rfind(".")] + ".pdf"
-                return FileResponse(open(os.path.join(pasta_temporaria, arquivo_pdf), 'rb') )
+
+                arquivo_gerado = open(os.path.join(pasta_temporaria, arquivo_pdf), 'rb')
+                response = HttpResponse(arquivo_gerado, content_type='application/pdf')
+                #Para Baixar
+                #response['Content-Disposition'] = 'attachment; filename="%s"'%(arquivo_pdf)
+                #Para exibir
+                response['Content-Disposition'] = 'inline; filename="%s"'%(arquivo_pdf)
+                return response
             except Exception as ex:
                 print(ex)
                 return HttpResponseRedirect("/nucleo/index")
@@ -58,6 +67,7 @@ import subprocess, sys, tempfile
 
 PADRAO_SUCESSO = b'Output written on'
 ARQUIVO_VAZIO = b"*(Please type a command or say `\\end')"
+PADRAO_NOME_ARQUIVO = b'**Please type the name of your input file.'
 ENTER_KEY = b'\n\r'
 
 def processando_latex(path_arquivo, pasta_temporaria):
@@ -67,6 +77,7 @@ def processando_latex(path_arquivo, pasta_temporaria):
     #Verificando o SO
     if sys.platform.startswith('win'):
         chamada += '.exe'
+    pdb.set_trace()
     r = subprocess.Popen([chamada, path_arquivo], stdin=subprocess.PIPE, stdout=subprocess.PIPE, shell=True)
     okay = False
     for line in r.stdout:
@@ -76,6 +87,9 @@ def processando_latex(path_arquivo, pasta_temporaria):
             r.communicate()
             break
         linha = line.rstrip()
+        if linha.find(PADRAO_NOME_ARQUIVO) != -1:
+            texto_nome_bytes = str.encode(path_arquivo)
+            r.stdin.write(texto_nome_bytes)
         if linha.find(PADRAO_SUCESSO) != -1:
             okay = True
         if linha.find(ARQUIVO_VAZIO) != -1:
