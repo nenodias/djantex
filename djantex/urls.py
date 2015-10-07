@@ -18,6 +18,7 @@ from django.contrib import admin
 import nucleo.urls as urls_nucleo
 
 urlpatterns = [
+    urls_nucleo.urlpatterns[0],
     url(r'^admin/', include(admin.site.urls)),
     url(r'^nucleo/', include(urls_nucleo.urlpatterns)),
 ]

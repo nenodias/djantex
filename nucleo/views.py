@@ -30,17 +30,23 @@ class UploadView(View):
     def post(self, request, *args, **kwargs):
         form = forms.UploadFileForm(request.POST, request.FILES)
         if form.is_valid():
-            upload_arquivo( form.cleaned_data['arquivo'] )
-            processando_latex( form.cleaned_data['arquivo'].name )
-            return HttpResponseRedirect('/nucleo/')
+            try:
+                upload_arquivo( form.cleaned_data['arquivo'], pasta_temporaria )
+                nome_arquivo = form.cleaned_data['arquivo'].name
+                processando_latex( form.cleaned_data['arquivo'].name, pasta_temporaria )
+                arquivo_pdf = nome_arquivo[:nome_arquivo.rfind(".")] + ".pdf"
+                return FileResponse(open(os.path.join(pasta_temporaria, arquivo_pdf), 'rb') )
+            except Exception as ex:
+                print(ex)
+                return HttpResponseRedirect("/nucleo/index")
         return render(request, 'upload.html', {'form': form})
 
 # Imports para o upload de arquivos
 import os
 from django.conf import settings
 
-def upload_arquivo(arquivo):
-    with open(os.path.join(settings.UPLOAD_DIRECTORY, arquivo.name), 'wb') as destination:
+def upload_arquivo(arquivo, pasta_temporaria):
+    with open(os.path.join(pasta_temporaria, arquivo.name), 'wb') as destination:
         for chunk in arquivo.chunks():
             destination.write(chunk)
 
@@ -51,10 +57,9 @@ PADRAO_SUCESSO = b'Output written on'
 ARQUIVO_VAZIO = b"*(Please type a command or say `\\end')"
 ENTER_KEY = b'\n\r'
 
-def processando_latex(path_arquivo):
+def processando_latex(path_arquivo, pasta_temporaria):
     atual = os.getcwd()
-    os.chdir('uploads')
-    #os.chdir( tempfile.gettempdir() )#Entrar no diretorio temporario
+    os.chdir(pasta_temporaria)
     chamada = "pdflatex"
     #Verificando o SO
     if sys.platform.startswith('win'):
