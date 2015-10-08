@@ -7,7 +7,7 @@ from . import forms
 
 class HomePageView(TemplateView):
 
-    template_name = "home.html"
+    template_name = 'home.html'
 
     def get_context_data(self, **kwargs):
         context = super(HomePageView, self).get_context_data(**kwargs)
@@ -34,12 +34,21 @@ class UploadView(View):
         form = forms.UploadFileForm(request.POST, request.FILES)
         if form.is_valid():
             try:
-                pdb.set_trace()
                 pasta_temporaria = tempfile.mkdtemp()
                 upload_arquivo( form.cleaned_data['arquivo'], pasta_temporaria )
                 nome_arquivo = form.cleaned_data['arquivo'].name
+                extensao_arquivo = nome_arquivo[nome_arquivo.rfind('.'):]
+                pdb.set_trace()
+                if extensao_arquivo == '.tex':
+                    pass
+                elif extensao_arquivo == '.zip':
+                    extrair_zip(nome_arquivo, pasta_temporaria)
+                    nome_arquivo = nome_arquivo[:nome_arquivo.rfind('.')]
+                    nome_arquivo += ".tex"
+                else:
+                    raise Exception('Arquivo não suportado')
                 processando_latex( nome_arquivo, pasta_temporaria )
-                arquivo_pdf = nome_arquivo[:nome_arquivo.rfind(".")] + ".pdf"
+                arquivo_pdf = nome_arquivo[:nome_arquivo.rfind('.')] + '.pdf'
 
                 arquivo_gerado = open(os.path.join(pasta_temporaria, arquivo_pdf), 'rb')
                 response = HttpResponse(arquivo_gerado, content_type='application/pdf')
@@ -50,7 +59,7 @@ class UploadView(View):
                 return response
             except Exception as ex:
                 print(ex)
-                return HttpResponseRedirect("/nucleo/index")
+                return HttpResponse(ex, status=500)
         return render(request, 'upload.html', {'form': form})
 
 # Imports para o upload de arquivos
@@ -61,6 +70,15 @@ def upload_arquivo(arquivo, pasta_temporaria):
     with open(os.path.join(pasta_temporaria, arquivo.name), 'wb') as destination:
         for chunk in arquivo.chunks():
             destination.write(chunk)
+
+import zipfile
+
+def extrair_zip(arquivo_zip, pasta_temporaria):
+    atual = os.getcwd()
+    os.chdir(pasta_temporaria)
+    with zipfile.ZipFile(arquivo_zip, "r") as zipado:
+        zipado.extractall(".")
+    os.chdir(atual)
 
 ## Fazendo o processamento do latex
 import subprocess, sys, tempfile
@@ -73,7 +91,7 @@ ENTER_KEY = b'\n\r'
 def processando_latex(path_arquivo, pasta_temporaria):
     atual = os.getcwd()
     os.chdir(pasta_temporaria)
-    chamada = "pdflatex"
+    chamada = 'pdflatex'
     #Verificando o SO
     if sys.platform.startswith('win'):
         chamada += '.exe'
